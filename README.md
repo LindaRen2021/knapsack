@@ -8,9 +8,9 @@
 
 The knapsack problem is a discrete optimization problem where we have a
 knapsack that can take a limited weight W and we want to fill this
-knapsack with a number of items i = 1; :::; n, each with a weight wi and
-a value vi. The goal is to find the knapsack with the largest value of
-the elements added to the knapsack.  
+knapsack with a number of items *i = 1,…, n*, each with a weight
+*w<sub>i</sub>* and a value *v<sub>i</sub>*. The goal is to find the
+knapsack with the largest value of the elements added to the knapsack.  
 This problem is NP-hard, meaning that it is ”at least as hard as the
 hardest problem in [NP](https://en.wikipedia.org/wiki/NP-hardness)”. NP
 is a (fundamental) class of problems for which there are (currently) no
@@ -51,7 +51,7 @@ brute_force_knapsack(x = knapsack_objects[1:8,], W = 3500)
 #> 
 #> $time
 #>    user  system elapsed 
-#>   0.014   0.001   0.015
+#>   0.012   0.000   0.013
 ```
 
 ### greedy_knapsack
