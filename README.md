@@ -51,21 +51,8 @@ brute_force_knapsack(x = knapsack_objects[1:8,], W = 3500)
 #> 
 #> $time
 #>    user  system elapsed 
-#>   0.013   0.002   0.015
+#>   0.013   0.001   0.015
 ```
-
-    $value
-    [1] 17277
-
-    $elements
-    [1] 4 5 7
-
-    $weight
-    [1] 2984
-
-    $time
-       user  system elapsed 
-      0.007   0.001   0.00
 
 ### greedy_knapsack
 
@@ -86,19 +73,5 @@ greedy_knapsack(x = knapsack_objects[1:800,], W = 3500)
 #> 
 #> $time
 #>    user  system elapsed 
-#>   0.002   0.000   0.003
+#>   0.002   0.000   0.002
 ```
-
-    $value
-    [1] 195851
-
-    $elements
-     [1] 256 530 701 559  89  75 759 626 219 244  63 672 455 764 329  77 705 320 110 509 762 729 691 283 553 620
-    [27] 341 187  83 707 511 322
-
-    $weight
-    [1] 3481
-
-    $time
-       user  system elapsed 
-      0.002   0.002   0.004 
