@@ -54,3 +54,49 @@ knapsack_objects <- data.frame(w = sample(1:4000, size = n, replace = TRUE), v <
 greedy_knapsack(x = knapsack_objects[1:800,], W = 3500)
 ```
 
+
+#### NOTE about assignment
+
+Do ___note___ that the assignment gives answers for the `greedy_knapsack` that are not correct. This is easy to show using code:
+
+```{r}
+set.seed(42)
+n <- 2000
+knapsack_objects <- data.frame(w = sample(1:4000, size = n, replace = TRUE),
+v <- runif(n = n, 0, 10000))
+
+# greedy_knapsack(x = knapsack_objects[1:800,], W = 3500)
+
+# Correct answers
+# Value:
+sum(knapsack_objects$v[c(256, 530, 701, 559,  89,  75, 759, 626, 219, 244,  63, 672, 455, 764, 329,  77, 705, 320, 110, 509, 762, 729, 691, 283, 553, 620, 341, 187,  83, 707, 511, 322)])
+
+
+# Weight:
+sum(knapsack_objects$w[c(256, 530, 701, 559,  89,  75, 759, 626, 219, 244,  63, 672, 455, 764, 329,  77, 705, 320, 110, 509, 762, 729, 691, 283, 553, 620, 341, 187,  83, 707, 511, 322)])
+
+# Given answer is missing element on index 322
+# Value:
+sum(knapsack_objects$w[c(256, 530, 701, 559,  89,  75, 759, 626, 219, 244,  63, 672, 455, 764, 329,  77, 705, 320, 110, 509, 762, 729, 691, 283, 553, 620, 341, 187,  83, 707, 511)])
+
+# Weight: 
+sum(knapsack_objects$v[c(256, 530, 701, 559,  89,  75, 759, 626, 219, 244,  63, 672, 455, 764, 329,  77, 705, 320, 110, 509, 762, 729, 691, 283, 553, 620, 341, 187,  83, 707, 511)])
+
+
+# greedy_knapsack(x = knapsack_objects[1:1200,], W = 2000)
+
+# Correct answers
+
+# Value:
+sum(knapsack_objects$v[c(256,  530, 1186,  951,  701, 1157,  973,  559, 1019,   89,   75,  759,  845, 1153,  626,  897, 1106,  219, 1065, 1070,  244, 1036,  63,  672,  455,  826,  764,  981,  329,   77,  320,  110)])
+
+# Weight:
+sum(knapsack_objects$w[c(256,  530, 1186,  951,  701, 1157,  973,  559, 1019,   89,   75,  759,  845, 1153,  626,  897, 1106,  219, 1065, 1070,  244, 1036,  63,  672,  455,  826,  764,  981,  329,   77,  320,  110)])
+
+# Given answer is missing elements on indices 320 and 110
+# Value:
+sum(knapsack_objects$v[c(256,  530, 1186,  951,  701, 1157,  973,  559, 1019,   89,   75,  759,  845, 1153,  626,  897, 1106,  219, 1065, 1070,  244, 1036,  63,  672,  455,  826,  764,  981,  329,   77)])
+
+# Weight:
+sum(knapsack_objects$w[c(256,  530, 1186,  951,  701, 1157,  973,  559, 1019,   89,   75,  759,  845, 1153,  626,  897, 1106,  219, 1065, 1070,  244, 1036,  63,  672,  455,  826,  764,  981,  329,   77)])
+```
