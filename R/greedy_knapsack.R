@@ -19,7 +19,7 @@ greedy_knapsack<-function(x, W) {
   ptm <- proc.time()
 
   ##ratio of value and weights
-  ratio <- x[,2] / x[,1]
+  ratio <- x$v / x$w
 
   ##combine the index, ratio and data frame
   x_with_ratio <- cbind(x, ratio = ratio, ind = 1:nrow(x))
@@ -34,7 +34,7 @@ greedy_knapsack<-function(x, W) {
   elements <- c()
   value <- 0
   weight <- 0
-  
+
   # min_w <- min(x_sort$w)
 
   for (i in 1:nrow(x_sort)) {

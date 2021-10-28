@@ -57,6 +57,8 @@ greedy_knapsack(x = knapsack_objects[1:800,], W = 3500)
 ```
 
 
+
+
 #### NOTE about assignment
 
 Do ___note___ that the assignment gives answers for the `greedy_knapsack` that are not correct. This is easy to show using code:
