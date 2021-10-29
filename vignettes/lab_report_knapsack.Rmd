@@ -25,7 +25,7 @@ This problem is NP-hard, meaning that it is ”at least as hard as the hardest p
 
 ## Installation
 
-You can install the development version of knapsack like so:
+You can install the package version of knapsack like so:
 
 ```r
 install.packages("devtools")
@@ -33,35 +33,299 @@ library(devtools)
 install_github("LindaRenJonsson/knapsack")
 ```
 
-## Examples
+TODO: Mention that vignettes are only available when installing a source package???, give link to github release binary
+
+## Creating a dataset:
+
+```{r}
+set.seed(42)
+n <- 2000
+knapsack_objects <- data.frame(w = sample(1:4000, size = n, replace = TRUE),
+v <- runif(n = n, 0, 10000))
+```
+
+## The code
 
 ### brute_force_knapsack
 
 ```{r brute_force_knapsack}
-library(knapsack)
+brute_force_knapsack <- function(x, W) {
+  ptm <- proc.time()
 
-set.seed(42)
-n <- 2000
-knapsack_objects <- data.frame(w = sample(1:4000, size = n, replace = TRUE), v <- runif(n = n, 0, 10000))
-brute_force_knapsack(x = knapsack_objects[1:8,], W = 3500)
+  n <- nrow(x)
+  binRep <- lapply(1:(2^n), function(v) head(as.integer(intToBits(v)), n))
+
+  elements <- c()
+  value <- 0
+  weight <- 0
+  for (i in 1:length(binRep)) {
+    inds <- c()
+    for (j in 1:n) {
+      if (binRep[[i]][j] == 1) {
+        inds <- c(inds, j)
+      }
+    }
+    wgt <- sum(x$w[inds])
+    val <- sum(x$v[inds])
+
+    if (wgt <= W && val > value) {
+      elements <- inds
+      value <- val
+      weight <- wgt
+    }
+  }
+  t <- proc.time() - ptm
+  result <- list(value = round(value, digits = 0), elements = elements, weight = weight, time = t)
+  return (result)
+}
 ```
 
 
 ### greedy_knapsack
 
 ```{r greedy_knapsack}
-set.seed(42)
-n <- 2000
-knapsack_objects <- data.frame(w = sample(1:4000, size = n, replace = TRUE), v <- runif(n = n, 0, 10000))
-greedy_knapsack(x = knapsack_objects[1:800,], W = 3500)
+greedy_knapsack<-function(x, W) {
+  ptm <- proc.time()
+
+  ##ratio of value and weights
+  ratio <- x[,2] / x[,1]
+
+  ##combine the index, ratio and data frame
+  x_with_ratio <- cbind(x, ratio = ratio, ind = 1:nrow(x))
+  x_sort <- x_with_ratio[order(-x_with_ratio$ratio),]
+
+  elements <- c()
+  value <- 0
+  weight <- 0
+  
+  for (i in 1:nrow(x_sort)) {
+    w <- weight + x_sort$w[i]
+    if (w <= W) {
+      weight <- w
+      value <- value + x_sort$v[i]
+      elements <- c(elements, x_sort$ind[i])
+    }
+  }
+
+  t <- proc.time() - ptm
+  result <- list(value = round(value, digits = 0), elements = elements, weight = weight, time = t)
+  return (result)
+}
 ```
 
 
 
 
-#### NOTE about assignment
 
-Do ___note___ that the assignment gives answers for the `greedy_knapsack` that are not correct. This is easy to show using code:
+## Simple timing of the examples in the assignment
+
+The first indications of the time it takes to run through each example is calculated simply using
+`proc.time()`
+
+### brute_force_knapsack
+
+```{r}
+brute_force_knapsack(x = knapsack_objects[1: 8,], W = 3500)
+brute_force_knapsack(x = knapsack_objects[1:12,], W = 3500)
+brute_force_knapsack(x = knapsack_objects[1:8,], W = 2000)
+brute_force_knapsack(x = knapsack_objects[1:12,], W = 2000)
+```
+
+Running `brute_force_knapsack` with 16 objects:
+
+```{r}
+brute_force_knapsack(x = knapsack_objects[1:16,], W = 3500)
+brute_force_knapsack(x = knapsack_objects[1:16,], W = 2000)
+```
+
+### greedy_knapsack
+
+```{r}
+greedy_knapsack(x = knapsack_objects[1:800,], W = 3500)
+greedy_knapsack(x = knapsack_objects[1:1200,], W = 2000)
+```
+
+Running `greedy_knapsack` with 1000000 objects:
+
+```{r}
+n <- 2000000
+knapsack_objects2 <- data.frame(w = sample(1:4000, size = n, replace = TRUE),
+v <- runif(n = n, 0, 10000))
+```
+
+```{r}
+gn <- greedy_knapsack(x = knapsack_objects2[1:1000000,], W = 3500)
+gn$time
+
+gn <- greedy_knapsack(x = knapsack_objects2[1:1000000,], W = 2000)
+gn$time
+```
+
+## Optimizing code
+
+The first step is always to see if there are some logic that can be applied that have a significant effect on the execution time.
+
+### brute_force_knapsack
+
+For the brute force algorithm one such obvious optimization is to filter out elements that by themselves have a weight that exceeds the given `W`, which have a significant impact even on modest
+reduction in size of data frame due to complexity _O(2<sup>n</sup>)_.
+
+```{r}
+brute_force_knapsack <- function(x, W) {
+  ptm <- proc.time()
+
+
+  ## Optimization attempt 1
+  # Make data frame smaller by removing impossible candidates
+  # this saves significant time on anything but the smallest of data frames
+
+  # Save original index as value in data frame
+  x_ind <- cbind(x, ind = 1:nrow(x))
+  x_opt <- dplyr::filter(x_ind, x_ind$w <= W)
+
+  n <- nrow(x_opt)
+  binRep <- lapply(1:(2^n), function(v) head(as.integer(intToBits(v)), n))
+
+  elements <- c()
+  value <- 0
+  weight <- 0
+  for (i in 1:length(binRep)) {
+    inds <- c()
+    for (j in 1:n) {
+      if (binRep[[i]][j] == 1) {
+        inds <- c(inds, j)
+      }
+    }
+    wgt <- sum(x_opt$w[inds])
+    val <- sum(x_opt$v[inds])
+
+    if (wgt <= W && val > value) {
+      # Use original indices for elements, saved in data frame above
+      elements <- x_opt$ind[inds]
+      value <- val
+      weight <- wgt
+    }
+  }
+  t <- proc.time() - ptm
+  result <- list(value = round(value, digits = 0), elements = elements, weight = weight, time = t)
+  return (result)
+}
+```
+
+
+Re-running `brute_force_knapsack` with 16 objects:
+
+```{r}
+brute_force_knapsack(x = knapsack_objects[1:16,], W = 3500)
+brute_force_knapsack(x = knapsack_objects[1:16,], W = 2000)
+```
+
+This already shows significant improvement, from 2 times (W = 3500 and max(x$w) = 4000 make filtering remove a fairly small amount, roughly 12.5% given an evenly distributed random sampling), to over 140000 times (W = 2000 and max(x$w) = 4000 make filtering remove roughly 50% given an evenly distributed random sampling)
+
+
+### Using `profvis`
+
+
+
+## Creating an R pacakge
+
+1. create_package()
+2. use_git()
+3. load_all()
+4. check()
+5. Edit DESCRIPTION
+6. use_mit_license()
+7. document()
+8. document each function
+9. change NAMESPACE
+10. install()
+11. use_testthat()
+12. use_package()
+13. use_readme_rmd()
+14. build_vignettes()
+15. Make source packages (otherwise vignettes does not build)
+
+
+### Putting it on GitHub
+
+1. use_github()
+
+
+
+### greedy_knapsack
+
+Since the implementation of the greedy algorithm is such that it will pick elements ordered by the value/weight ratio, starting with the first element, it would make sense to stop checking once the difference between the currently accumulated weight and the max allowed weight is smaller than the smallest weight of the elements.
+Also here it may help to filter out elements that by themselves have a weight that exceeds the given `W`, but only if it's reasonable to assume a large enough portion of the data frame can be filtered out, due to the cost of the filter operation.
+
+```{r}
+greedy_knapsack<-function(x, W) {
+  ptm <- proc.time()
+
+  ##ratio of value and weights
+  ratio <- x[,2] / x[,1]
+
+  ##combine the data frame with ratio and the original indices
+  x_with_ratio <- cbind(x, ratio = ratio, ind = 1:nrow(x))
+
+  ## Optimization attempt 2
+  # Filtering is somewhat expensive, so it is not clear that removing impossible candidates
+  # saves time despite making both sorting and looping below faster. To gauge how effective
+  # this could be it is possible to check how small W is compared to max(x$w); if the difference
+  # is large filtering will be able to remove a big portion of the elements, making optmization
+  # worthwhile.
+  if (max(x$w) / W >= 2) {
+    x_opt <- dplyr::filter(x_with_ratio, w <= W)
+    x_sort <- x_opt[order(-x_opt$ratio),]
+  } else {
+    x_sort <- x_with_ratio[order(-x_with_ratio$ratio),]
+  }
+
+  elements <- c()
+  value <- 0
+  weight <- 0
+
+  ## Optimization attempt 1
+  min_w <- min(x_sort$w)
+
+  for (i in 1:nrow(x_sort)) {
+    w <- weight + x_sort$w[i]
+    if (w <= W) {
+      weight <- w
+      value <- value + x_sort$v[i]
+      elements <- c(elements, x_sort$ind[i])
+    }
+    ## Optimization attempt 1
+    # If no more possible candidates, we're done (for large data frames, this saves significant time)
+    if (weight + min_w > W) break()
+  }
+
+  t <- proc.time() - ptm
+  result <- list(value = round(value, digits = 0), elements = elements, weight = weight, time = t)
+  return (result)
+}
+```
+
+Re-running `greedy_knapsack` with 1000000 objects:
+
+```{r}
+gn <- greedy_knapsack(x = knapsack_objects2[1:1000000,], W = 3500)
+gn$time
+
+gn <- greedy_knapsack(x = knapsack_objects2[1:1000000,], W = 2000)
+gn$time
+```
+
+And again, this shows significant improvement, roughly 2.5 to 3 times faster for 1000000 objects.
+
+
+  
+
+
+
+
+#### NOTE about the results given in the assignment
+
+Do note that the assignment gives answers for the `greedy_knapsack` that are not correct. This is easy to show using code:
 
 ```{r}
 set.seed(42)
@@ -69,36 +333,103 @@ n <- 2000
 knapsack_objects <- data.frame(w = sample(1:4000, size = n, replace = TRUE),
 v <- runif(n = n, 0, 10000))
 
-# greedy_knapsack(x = knapsack_objects[1:800,], W = 3500)
+greedy_knapsack(x = knapsack_objects[1:800,], W = 3500)
+```
 
-# Correct answers
+the answer as given in the assigment is:
+
+<pre>
+$value
+[1] 190944
+
+$elements
+ [1] 256 530 701 559 89 75 759 626 219 244 63 672 455 764 329 77 705 320 110
+[20] 509 762 729 691 283 553 620 341 187 83 707 511
+</pre>
+
+whereas `greedy_knapsack` gives:
+
+<pre>
+$value
+[1] <span style="color:red">195851</span>
+
+$elements
+ [1] 256 530 701 559  89  75 759 626 219 244  63 672 455 764 329  77 705 320 110
+[20] 509 762 729 691 283 553 620 341 187  83 707 511 <span style="color:red">322</span>
+</pre>
+
+that is, a higher value, and one more element in the list.
+That this is indeed correct can trivially be shown by adding upp the values and weights for both answers, and see which weight is a better fit:
+
+
+Correct answers:
+
+```{r}
 # Value:
 sum(knapsack_objects$v[c(256, 530, 701, 559,  89,  75, 759, 626, 219, 244,  63, 672, 455, 764, 329,  77, 705, 320, 110, 509, 762, 729, 691, 283, 553, 620, 341, 187,  83, 707, 511, 322)])
 
 # Weight:
 sum(knapsack_objects$w[c(256, 530, 701, 559,  89,  75, 759, 626, 219, 244,  63, 672, 455, 764, 329,  77, 705, 320, 110, 509, 762, 729, 691, 283, 553, 620, 341, 187,  83, 707, 511, 322)])
+```
 
 
-# Given answer is missing element on index 322
+Answer given in the assignment is missing element at index 322
+
+```{r}
 # Value:
 sum(knapsack_objects$v[c(256, 530, 701, 559,  89,  75, 759, 626, 219, 244,  63, 672, 455, 764, 329,  77, 705, 320, 110, 509, 762, 729, 691, 283, 553, 620, 341, 187,  83, 707, 511)])
 
 # Weight: 
 sum(knapsack_objects$w[c(256, 530, 701, 559,  89,  75, 759, 626, 219, 244,  63, 672, 455, 764, 329,  77, 705, 320, 110, 509, 762, 729, 691, 283, 553, 620, 341, 187,  83, 707, 511)])
+```
+
+The same is true for the other example:
+
+```{r}
+greedy_knapsack(x = knapsack_objects[1:1200,], W = 2000)
+```
 
 
-# greedy_knapsack(x = knapsack_objects[1:1200,], W = 2000)
+the answer as given in the assigment is:
 
-# Correct answers
+<pre>
+$value
+[1] 178120
 
+$elements
+ [1] 256 530 1186 951 701 1157 973 559 1019 89 75 759 845 1153 626
+[16] 897 1106 219 1065 1070 244 1036 63 672 455 826 764 981 329 77
+</pre>
+
+whereas `greedy_knapsack` gives:
+
+<pre>
+$value
+[1] <span style="color:red">185278</span>
+
+elements
+ [1]  256  530 1186  951  701 1157  973  559 1019   89   75  759  845 1153  626
+[16]  897 1106  219 1065 1070  244 1036   63  672  455  826  764  981  329   77
+[31]  <span style="color:red">320  110<span>
+</pre>
+
+that is, a higher value, and two more elements in the list.
+Again, that this is indeed correct can trivially be shown by adding upp the values and weights for both answers, and see which weight is a better fit:
+
+Correct answers
+
+```{r}
 # Value:
 sum(knapsack_objects$v[c(256,  530, 1186,  951,  701, 1157,  973,  559, 1019,   89,   75,  759,  845, 1153,  626,  897, 1106,  219, 1065, 1070,  244, 1036,  63,  672,  455,  826,  764,  981,  329,   77,  320,  110)])
 
 # Weight:
 sum(knapsack_objects$w[c(256,  530, 1186,  951,  701, 1157,  973,  559, 1019,   89,   75,  759,  845, 1153,  626,  897, 1106,  219, 1065, 1070,  244, 1036,  63,  672,  455,  826,  764,  981,  329,   77,  320,  110)])
+```
 
 
-# Given answer is missing elements on indices 320 and 110
+Given answer is missing elements at indices 320 and 110
+
+```{r}
 # Value:
 sum(knapsack_objects$v[c(256,  530, 1186,  951,  701, 1157,  973,  559, 1019,   89,   75,  759,  845, 1153,  626,  897, 1106,  219, 1065, 1070,  244, 1036,  63,  672,  455,  826,  764,  981,  329,   77)])
 

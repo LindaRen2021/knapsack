@@ -1,7 +1,7 @@
 Package: knapsack
 Type: Package
 Title: Knapsack Problem Solver
-Version: 0.1.0
+Version: 1.0.0
 Author: person("Yiying", "Ren", email = "linda@shrek-fiona.com", role = c("aut", "cre"))
 Maintainer: Yiying Ren <linda@shrek-fiona.com>
 Description: Functions for solving the Knapsack problem as specified in Assignment 4.

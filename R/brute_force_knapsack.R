@@ -29,7 +29,7 @@ brute_force_knapsack <- function(x, W) {
   x_opt <- dplyr::filter(x_ind, x_ind$w <= W)
 
   n <- nrow(x_opt)
-  binRep <- lapply(1:(2^n), function(v) head(as.integer(intToBits(v), n), n))
+  binRep <- lapply(1:(2^n), function(v) head(as.integer(intToBits(v)), n))
 
   elements <- c()
   value <- 0
